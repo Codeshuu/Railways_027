@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 railway.db
 *.db
+.venv/ 
+scoring_stub_backup.py 
+scheduler_stub_backup.py 

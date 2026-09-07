@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import pandas as pd
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from scoring import priority_score, health_score
 from scheduler import generate_schedule
 
@@ -32,12 +32,8 @@ init_db()
 
 @app.route("/", methods=["GET"])
 def home():
-    """Index status route."""
-    return jsonify({
-        "system": "AI-Powered Automatic Block Planning API",
-        "status": "online",
-        "version": "1.0.0-MVP"
-    })
+    """Serve frontend dashboard."""
+    return send_from_directory("frontend", "dashboard.html")
 
 @app.route("/api/defects", methods=["GET"])
 def get_defects():
