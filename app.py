@@ -31,9 +31,35 @@ def init_db():
 init_db()
 
 @app.route("/", methods=["GET"])
-def home():
-    """Serve frontend dashboard."""
-    return send_from_directory("frontend", "dashboard.html")
+@app.route("/overview", methods=["GET"])
+def overview():
+    """Serve frontend overview landing page."""
+    return send_from_directory("frontend", "overview.html")
+
+@app.route("/defects", methods=["GET"])
+def defects_page():
+    """Serve defects page."""
+    return send_from_directory("frontend", "defects.html")
+
+@app.route("/schedule", methods=["GET"])
+def schedule_page():
+    """Serve maintenance schedule page."""
+    return send_from_directory("frontend", "schedule.html")
+
+@app.route("/whatif", methods=["GET"])
+def whatif_page():
+    """Serve what-if simulator page."""
+    return send_from_directory("frontend", "whatif.html")
+
+@app.route("/style.css", methods=["GET"])
+def serve_css():
+    """Serve frontend/style.css stylesheet with text/css mimetype."""
+    return send_from_directory("frontend", "style.css", mimetype="text/css")
+
+@app.route("/app.js", methods=["GET"])
+def serve_js():
+    """Serve frontend/app.js script with text/javascript mimetype."""
+    return send_from_directory("frontend", "app.js", mimetype="text/javascript")
 
 @app.route("/api/defects", methods=["GET"])
 def get_defects():

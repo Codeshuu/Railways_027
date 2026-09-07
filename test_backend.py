@@ -35,12 +35,12 @@ class BackendTestCase(unittest.TestCase):
         # Defects dummy data
         cursor.executemany("""
             INSERT INTO defects 
-            (source_system, asset_id, corridor_id, defect_type, severity, date_reported, due_date, estimated_block_duration, department)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (source_system, asset_id, corridor_id, defect_type, severity, date_reported, due_date, estimated_block_duration, department, location_marker)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, [
-            ("TMS", "RAIL-101", "CORR-NDLS-CNB", "Rail Fracture Risk", 5, "2026-09-01", "2026-09-03", 3.5, "Engineering"),
-            ("SMMS", "SIG-204", "CORR-NDLS-CNB", "Point Machine Failure", 4, "2026-09-02", "2026-09-09", 2.0, "S&T"),
-            ("TDMS", "TRK-305", "CORR-HWH-MGS", "Track De-stressing", 3, "2026-09-04", "2026-09-19", 4.0, "TD")
+            ("TMS", "RAIL-101", "CORR-NDLS-CNB", "Rail Fracture Risk", 5, "2026-09-01", "2026-09-03", 3.5, "Engineering", "NDLS-CNB @ 42.3km"),
+            ("SMMS", "SIG-204", "CORR-NDLS-CNB", "Point Machine Failure", 4, "2026-09-02", "2026-09-09", 2.0, "S&T", "NDLS-CNB @ 108.7km"),
+            ("TDMS", "TRK-305", "CORR-HWH-MGS", "Track De-stressing", 3, "2026-09-04", "2026-09-19", 4.0, "TD", "HWH-MGS @ 215.1km")
         ])
 
         # Timetable dummy data
@@ -78,6 +78,7 @@ class BackendTestCase(unittest.TestCase):
         first_defect = data[0]
         self.assertIn("task_id", first_defect)
         self.assertIn("source_system", first_defect)
+        self.assertIn("location_marker", first_defect)
         self.assertIn("priority_score", first_defect)
         self.assertIn("health_score", first_defect)
         self.assertIsInstance(first_defect["priority_score"], float)
@@ -129,6 +130,24 @@ class BackendTestCase(unittest.TestCase):
         # Verify DB schedule results remain unchanged
         post_whatif_sched = self.client.get("/api/schedule").get_json()
         self.assertEqual(len(initial_sched), len(post_whatif_sched))
+
+    def test_06_page_routes(self):
+        """Test multipage HTML serving routes (/ , /overview, /defects, /schedule, /whatif)."""
+        for route in ["/", "/overview", "/defects", "/schedule", "/whatif"]:
+            res = self.client.get(route)
+            self.assertEqual(res.status_code, 200, f"Failed for route {route}")
+            self.assertIn("text/html", res.content_type)
+            self.assertIn(b"<!DOCTYPE html>", res.data)
+
+    def test_07_static_routes(self):
+        """Test static CSS and JS routes (/style.css, /app.js)."""
+        css_res = self.client.get("/style.css")
+        self.assertEqual(css_res.status_code, 200)
+        self.assertIn("text/css", css_res.content_type)
+
+        js_res = self.client.get("/app.js")
+        self.assertEqual(js_res.status_code, 200)
+        self.assertIn("text/javascript", js_res.content_type)
 
 if __name__ == "__main__":
     unittest.main()

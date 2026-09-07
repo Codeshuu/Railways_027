@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS defects (
     date_reported TEXT NOT NULL,
     due_date TEXT NOT NULL,
     estimated_block_duration REAL NOT NULL,
-    department TEXT NOT NULL
+    department TEXT NOT NULL,
+    location_marker TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS corridors (

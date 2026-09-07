@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What-If Simulator | Indian Railways</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h1>🚂 Automatic Block Planning System</h1>
+                <p>AI-Driven Maintenance Scheduling & Asset Health Intelligence</p>
+            </div>
+            <div class="status-pill">
+                <div class="status-dot"></div>
+                System Active • Horizon 2026-09-07 to 09-13
+            </div>
+        </header>
+
+        <!-- Top Navigation Bar -->
+        <nav id="top-nav"></nav>
+
+        <!-- What-If Simulator Panel -->
+        <div class="section-card" style="max-width: 800px; margin: 0 auto;">
+            <div class="section-header">
+                <div class="section-title">🧪 What-If Maintenance Simulator</div>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">
+                Simulate priority score changes and block window allocation under modified operational parameters. Changes are calculated in-memory and will <strong>not</strong> overwrite the committed database schedule.
+            </p>
+
+            <div class="form-group">
+                <label class="form-label" for="sim-task-select">Select Task for Simulation</label>
+                <select id="sim-task-select" class="form-select" onchange="onTaskSelectChange()">
+                    <option value="">Select a defect task...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="sim-severity">Adjust Severity Level (1 - 5)</label>
+                <div class="slider-container">
+                    <input type="range" id="sim-severity" min="1" max="5" value="3" oninput="document.getElementById('severity-val').innerText = this.value">
+                    <span class="slider-val" id="severity-val">3</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="sim-duration">Adjust Estimated Block Duration (Hours)</label>
+                <input type="number" id="sim-duration" class="form-control" min="0.5" max="12.0" step="0.5" value="3.0">
+            </div>
+
+            <button class="btn btn-secondary" id="btn-run-whatif" onclick="runWhatIf()" style="margin-top: 10px;">
+                <span>🧪 Run What-If Simulation</span>
+            </button>
+
+            <!-- Simulation Result Output -->
+            <div id="sim-result-container" style="display: none;">
+                <div class="sim-card">
+                    <div class="sim-card-header">
+                        <span style="font-weight: 700; font-size: 1rem;" id="sim-res-taskid">Task #—</span>
+                        <span class="badge badge-simulated">Simulated — not saved</span>
+                    </div>
+                    <div class="sim-meta-grid">
+                        <div class="sim-meta-item">
+                            <span>Simulated Date</span>
+                            <strong id="sim-res-date">—</strong>
+                        </div>
+                        <div class="sim-meta-item">
+                            <span>Time Slot</span>
+                            <strong id="sim-res-slot">—</strong>
+                        </div>
+                        <div class="sim-meta-item">
+                            <span>Priority Score</span>
+                            <strong id="sim-res-priority" style="color: #a855f7;">—</strong>
+                        </div>
+                        <div class="sim-meta-item">
+                            <span>Corridor</span>
+                            <strong id="sim-res-corridor">—</strong>
+                        </div>
+                    </div>
+                    <div class="sim-explanation" id="sim-res-explanation">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

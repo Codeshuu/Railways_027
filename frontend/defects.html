@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defects & Asset Health | Indian Railways</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h1>🚂 Automatic Block Planning System</h1>
+                <p>AI-Driven Maintenance Scheduling & Asset Health Intelligence</p>
+            </div>
+            <div class="status-pill">
+                <div class="status-dot"></div>
+                System Active • Horizon 2026-09-07 to 09-13
+            </div>
+        </header>
+
+        <!-- Top Navigation Bar -->
+        <nav id="top-nav"></nav>
+
+        <!-- Defects Table Section -->
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-title">Reported Defects & Asset Health</div>
+                <span style="font-size: 0.85rem; color: var(--text-muted);" id="defects-count">Loading...</span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Task ID</th>
+                            <th>Defect Type</th>
+                            <th>Corridor</th>
+                            <th>Location (KM)</th>
+                            <th>Department</th>
+                            <th>Severity</th>
+                            <th>Priority Score</th>
+                            <th>Health Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="defects-tbody">
+                        <tr><td colspan="8" class="empty-text">Loading defects data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

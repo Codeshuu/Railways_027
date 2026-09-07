@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overview | AI-Powered Automatic Block Planning System</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h1>🚂 Automatic Block Planning System</h1>
+                <p>AI-Driven Maintenance Scheduling & Asset Health Intelligence</p>
+            </div>
+            <div class="status-pill">
+                <div class="status-dot"></div>
+                System Active • Horizon 2026-09-07 to 09-13
+            </div>
+        </header>
+
+        <!-- Top Navigation Bar -->
+        <nav id="top-nav"></nav>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Identified Defects</div>
+                <div class="stat-value" id="stat-total-defects">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Critical Defects (Priority > 7)</div>
+                <div class="stat-value" style="color: #f87171;" id="stat-high-priority">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Average Asset Health</div>
+                <div class="stat-value" style="color: #34d399;" id="stat-avg-health">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Corridors</div>
+                <div class="stat-value" id="stat-corridors">—</div>
+            </div>
+        </div>
+
+        <!-- System Overview Panel -->
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-title">System Status & Executive Summary</div>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 16px;">
+                Welcome to the <strong>Indian Railways Dynamic Conflict & Block Planning Engine</strong>. This intelligent decision support platform analyzes track defects across high-density freight and passenger corridors to generate optimal maintenance block windows.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
+                <div style="background-color: var(--panel-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <h3 style="font-size: 1rem; color: var(--accent-blue); margin-bottom: 8px;">🚨 Defect Monitoring</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Real-time tracking of track fractures, point failures, and catenary tension issues with exact chainage location markers.</p>
+                </div>
+                <div style="background-color: var(--panel-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <h3 style="font-size: 1rem; color: var(--accent-purple); margin-bottom: 8px;">📅 Conflict-Free Scheduling</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Graph-based track section reservation prioritizing emergency maintenance while minimizing passenger delay penalty.</p>
+                </div>
+                <div style="background-color: var(--panel-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <h3 style="font-size: 1rem; color: #34d399; margin-bottom: 8px;">🧪 What-If Simulation</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Interactive scenario modeling to evaluate schedule impacts before committing changes to operational timetable.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
