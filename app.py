@@ -51,6 +51,11 @@ def whatif_page():
     """Serve what-if simulator page."""
     return send_from_directory("frontend", "whatif.html")
 
+@app.route("/submit", methods=["GET"])
+def submit_page():
+    """Serve defect submission page."""
+    return send_from_directory("frontend", "submit.html")
+
 @app.route("/style.css", methods=["GET"])
 def serve_css():
     """Serve frontend/style.css stylesheet with text/css mimetype."""
@@ -83,6 +88,59 @@ def get_defects():
 
     return jsonify(defects_list)
 
+@app.route("/api/defects", methods=["POST"])
+def create_defect():
+    """POST /api/defects - Submits a new defect report."""
+    payload = request.get_json(silent=True) or {}
+    
+    required_fields = [
+        "source_system", "asset_id", "corridor_id", "defect_type",
+        "severity", "date_reported", "due_date", "estimated_block_duration", "department"
+    ]
+    
+    for field in required_fields:
+        if field not in payload or payload[field] is None or str(payload[field]).strip() == "":
+            return jsonify({"error": f"Missing required field: {field}"}), 400
+            
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    location_marker = str(payload.get("location_marker", "") or "").strip()
+    
+    try:
+        cursor.execute("""
+            INSERT INTO defects 
+            (source_system, asset_id, corridor_id, defect_type, severity, date_reported, due_date, estimated_block_duration, department, location_marker)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            str(payload["source_system"]),
+            str(payload["asset_id"]),
+            str(payload["corridor_id"]),
+            str(payload["defect_type"]),
+            int(payload["severity"]),
+            str(payload["date_reported"]),
+            str(payload["due_date"]),
+            float(payload["estimated_block_duration"]),
+            str(payload["department"]),
+            location_marker
+        ))
+        conn.commit()
+        task_id = cursor.lastrowid
+        
+        row = conn.execute("SELECT * FROM defects WHERE task_id = ?", (task_id,)).fetchone()
+        corridor_row = conn.execute("SELECT * FROM corridors WHERE corridor_id = ?", (payload["corridor_id"],)).fetchone()
+        conn.close()
+        
+        d_dict = dict(row)
+        c_dict = dict(corridor_row) if corridor_row else None
+        d_dict["priority_score"] = priority_score(d_dict, c_dict)
+        d_dict["health_score"] = health_score(d_dict)
+        
+        return jsonify(d_dict), 201
+    except Exception as e:
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/corridors", methods=["GET"])
 def get_corridors():
     """GET /api/corridors - Returns list of railway corridors."""
@@ -102,6 +160,59 @@ def get_schedule():
     
     schedule_list = [dict(r) for r in results_rows]
     return jsonify(schedule_list)
+
+@app.route("/api/schedule/<int:sched_id>/complete", methods=["PATCH"])
+def complete_schedule_item(sched_id):
+    """PATCH /api/schedule/<id>/complete - Marks a schedule block as complete and checks for duration overrun."""
+    payload = request.get_json(silent=True) or {}
+    
+    if "actual_duration" not in payload:
+        return jsonify({"error": "Missing required field: actual_duration"}), 400
+        
+    try:
+        actual_duration = float(payload["actual_duration"])
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid actual_duration value"}), 400
+        
+    conn = get_db_connection()
+    row = conn.execute("SELECT * FROM schedule_results WHERE id = ?", (sched_id,)).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"error": f"Schedule item with id {sched_id} not found"}), 404
+        
+    d_dict = dict(row)
+    slot_start = d_dict.get("slot_start", "00:00")
+    slot_end = d_dict.get("slot_end", "00:00")
+    
+    def parse_time_hours(t_str):
+        try:
+            parts = t_str.split(":")
+            return int(parts[0]) + int(parts[1]) / 60.0
+        except Exception:
+            return 0.0
+            
+    scheduled_duration = parse_time_hours(slot_end) - parse_time_hours(slot_start)
+    if scheduled_duration <= 0:
+        scheduled_duration = 2.0  # default fallback
+        
+    explanation = d_dict.get("explanation_text") or ""
+    if actual_duration > scheduled_duration:
+        overrun_msg = f"OVERRUN: took {actual_duration:.1f} hours vs {scheduled_duration:.1f} scheduled — flagged for reschedule of downstream corridor slots."
+        if "OVERRUN:" not in explanation:
+            explanation = f"{explanation} | {overrun_msg}" if explanation else overrun_msg
+
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE schedule_results
+        SET actual_duration = ?, explanation_text = ?
+        WHERE id = ?
+    """, (actual_duration, explanation, sched_id))
+    conn.commit()
+    
+    updated_row = conn.execute("SELECT * FROM schedule_results WHERE id = ?", (sched_id,)).fetchone()
+    conn.close()
+    
+    return jsonify(dict(updated_row)), 200
 
 @app.route("/api/schedule/generate", methods=["POST"])
 def generate_schedule_route():
@@ -184,6 +295,7 @@ def whatif_route():
 
     # Recalculate schedule in-memory without saving to DB
     schedule_df = generate_schedule(defects_df, corridors_df, timetable_df)
+    schedule_df = schedule_df.astype(object).where(pd.notna(schedule_df), None)
     results_list = schedule_df.to_dict(orient="records")
     
     return jsonify({

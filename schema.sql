@@ -39,5 +39,6 @@ CREATE TABLE IF NOT EXISTS schedule_results (
     slot_end TEXT NOT NULL,
     priority_score REAL NOT NULL,
     merged_with TEXT,
-    explanation_text TEXT
+    explanation_text TEXT,
+    actual_duration REAL
 );

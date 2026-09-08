@@ -132,8 +132,8 @@ class BackendTestCase(unittest.TestCase):
         self.assertEqual(len(initial_sched), len(post_whatif_sched))
 
     def test_06_page_routes(self):
-        """Test multipage HTML serving routes (/ , /overview, /defects, /schedule, /whatif)."""
-        for route in ["/", "/overview", "/defects", "/schedule", "/whatif"]:
+        """Test multipage HTML serving routes (/ , /overview, /defects, /schedule, /whatif, /submit)."""
+        for route in ["/", "/overview", "/defects", "/schedule", "/whatif", "/submit"]:
             res = self.client.get(route)
             self.assertEqual(res.status_code, 200, f"Failed for route {route}")
             self.assertIn("text/html", res.content_type)
@@ -148,6 +148,100 @@ class BackendTestCase(unittest.TestCase):
         js_res = self.client.get("/app.js")
         self.assertEqual(js_res.status_code, 200)
         self.assertIn("text/javascript", js_res.content_type)
+
+    def test_08_post_defect_success(self):
+        """Test POST /api/defects creates a new defect row with priority and health scores attached."""
+        payload = {
+            "source_system": "TMS",
+            "asset_id": "RAIL-999",
+            "corridor_id": "CORR-NDLS-CNB",
+            "defect_type": "Emergency Weld Crack",
+            "severity": 5,
+            "date_reported": "2026-09-07",
+            "due_date": "2026-09-08",
+            "estimated_block_duration": 4.0,
+            "department": "Engineering",
+            "location_marker": "NDLS-CNB @ 15.0km"
+        }
+        res = self.client.post("/api/defects", data=json.dumps(payload), content_type="application/json")
+        self.assertEqual(res.status_code, 201)
+        data = res.get_json()
+        self.assertIn("task_id", data)
+        self.assertEqual(data["asset_id"], "RAIL-999")
+        self.assertIn("priority_score", data)
+        self.assertIn("health_score", data)
+        self.assertIsInstance(data["priority_score"], float)
+
+    def test_09_post_defect_missing_fields(self):
+        """Test POST /api/defects with missing required fields returns 400."""
+        incomplete_payload = {
+            "source_system": "TMS",
+            "asset_id": "RAIL-888"
+            # Missing corridor_id, defect_type, severity, etc.
+        }
+        res = self.client.post("/api/defects", data=json.dumps(incomplete_payload), content_type="application/json")
+        self.assertEqual(res.status_code, 400)
+        data = res.get_json()
+        self.assertIn("error", data)
+
+    def test_10_patch_schedule_overrun(self):
+        """Test PATCH /api/schedule/<id>/complete with duration overrun appends OVERRUN note."""
+        # 1. Generate schedule first
+        gen_res = self.client.post("/api/schedule/generate")
+        self.assertEqual(gen_res.status_code, 200)
+        sched_items = gen_res.get_json().get("schedule", [])
+        self.assertGreater(len(sched_items), 0)
+
+        target_item = sched_items[0]
+        sched_id = target_item["id"]
+
+        # 2. Patch with actual_duration exceeding scheduled slot
+        patch_payload = {"actual_duration": 8.0}
+        patch_res = self.client.patch(f"/api/schedule/{sched_id}/complete", data=json.dumps(patch_payload), content_type="application/json")
+        self.assertEqual(patch_res.status_code, 200)
+        updated_item = patch_res.get_json()
+        self.assertEqual(updated_item["actual_duration"], 8.0)
+        self.assertIn("OVERRUN:", updated_item["explanation_text"])
+
+    def test_11_whatif_valid_json_nan_regression(self):
+        """Test POST /api/whatif response has valid JSON without NaN literals when merged_with is all None."""
+        payload = {
+            "defects": [
+                {
+                    "task_id": 1,
+                    "source_system": "TMS",
+                    "asset_id": "RAIL-101",
+                    "corridor_id": "CORR-NDLS-CNB",
+                    "defect_type": "Rail Fracture Risk",
+                    "severity": 5,
+                    "date_reported": "2026-09-02",
+                    "due_date": "2026-09-07",
+                    "estimated_block_duration": 3.5,
+                    "department": "Engineering"
+                }
+            ],
+            "corridors": [
+                {
+                    "corridor_id": "CORR-NDLS-CNB",
+                    "section_name": "New Delhi - Kanpur Central",
+                    "is_high_density": 1
+                }
+            ]
+        }
+        res = self.client.post("/api/whatif", data=json.dumps(payload), content_type="application/json")
+        self.assertEqual(res.status_code, 200)
+        raw_text = res.get_data(as_text=True)
+        
+        # Confirm literal NaN is NOT in JSON output
+        self.assertNotIn("NaN", raw_text)
+        self.assertNotIn(": NaN", raw_text)
+        
+        # Confirm strict JSON parsing succeeds without NaN errors
+        parsed_json = json.loads(raw_text)
+        self.assertIn("schedule", parsed_json)
+        self.assertEqual(len(parsed_json["schedule"]), 1)
+        # Confirm merged_with is strictly Python None (JSON null)
+        self.assertIsNone(parsed_json["schedule"][0]["merged_with"])
 
 if __name__ == "__main__":
     unittest.main()

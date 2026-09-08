@@ -16,7 +16,8 @@ function renderNavBar() {
         { path: "/overview", altPaths: ["/", "/overview.html"], label: "📊 Overview" },
         { path: "/defects", altPaths: ["/defects.html"], label: "🚨 Defects & Health" },
         { path: "/schedule", altPaths: ["/schedule.html"], label: "📅 Schedule" },
-        { path: "/whatif", altPaths: ["/whatif.html"], label: "🧪 What-If Simulator" }
+        { path: "/whatif", altPaths: ["/whatif.html"], label: "🧪 What-If Simulator" },
+        { path: "/submit", altPaths: ["/submit.html"], label: "➕ Submit Data" }
     ];
 
     const linksHtml = navItems.map(item => {
@@ -51,6 +52,11 @@ async function initPageContent() {
         } else {
             populateWhatIfDropdown(defectsData);
         }
+    }
+    // Submit defect page setup
+    if (document.getElementById("sub-corridor")) {
+        await populateSubmitCorridors();
+        initSubmitDefaultDates();
     }
 }
 
@@ -239,7 +245,7 @@ function renderScheduleTable(schedule) {
     if (!tbody) return;
 
     if (!schedule || schedule.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="empty-text">No schedule items generated.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-text">No schedule items generated.</td></tr>`;
         return;
     }
 
@@ -252,6 +258,11 @@ function renderScheduleTable(schedule) {
         const mergedText = s.merged_with ? `<span class="badge badge-warning">${escapeHtml(s.merged_with)}</span>` : "—";
         const windowText = `${escapeHtml(s.slot_start || "")} - ${escapeHtml(s.slot_end || "")}`;
 
+        const isOverrun = s.explanation_text && s.explanation_text.includes("OVERRUN:");
+        const actionBtnHtml = isOverrun 
+            ? `<span class="badge badge-danger" style="font-size: 0.75rem;">Overrun Flagged</span>`
+            : `<button class="btn" style="padding: 4px 10px; font-size: 0.78rem; background-color: var(--panel-bg); border: 1px solid var(--border-color); color: #6ee7b7; cursor: pointer;" onclick="markScheduleComplete(${s.id}, '${escapeHtml(s.slot_start)}', '${escapeHtml(s.slot_end)}')">Mark Complete</button>`;
+
         return `
             <tr>
                 <td><strong>TASK-${s.task_id}</strong></td>
@@ -261,9 +272,126 @@ function renderScheduleTable(schedule) {
                 <td><span class="badge ${pBadgeClass}">${pScore.toFixed(2)}</span></td>
                 <td>${mergedText}</td>
                 <td style="font-size: 0.85rem; color: #d1d5db;">${escapeHtml(s.explanation_text || "")}</td>
+                <td>${actionBtnHtml}</td>
             </tr>
         `;
     }).join("");
+}
+
+async function markScheduleComplete(schedId, slotStart, slotEnd) {
+    function parseHours(tStr) {
+        try {
+            const parts = tStr.split(":");
+            return parseInt(parts[0]) + parseInt(parts[1]) / 60;
+        } catch(e) { return 2.0; }
+    }
+    const defaultHours = Math.max(0.5, (parseHours(slotEnd) - parseHours(slotStart)) || 2.0);
+    const input = prompt(`Enter actual duration taken in hours for Schedule #${schedId} (Scheduled: ${defaultHours.toFixed(1)} hrs):`, defaultHours.toFixed(1));
+    
+    if (input === null) return;
+    const actualDuration = parseFloat(input);
+    if (isNaN(actualDuration) || actualDuration <= 0) {
+        alert("Please enter a valid positive number for duration.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/schedule/${schedId}/complete`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ actual_duration: actualDuration })
+        });
+        if (!res.ok) throw new Error("Failed to mark item complete");
+        await fetchExistingSchedule();
+    } catch (err) {
+        console.error("Error completing schedule item:", err);
+        alert("Failed to update schedule status.");
+    }
+}
+
+async function populateSubmitCorridors() {
+    const select = document.getElementById("sub-corridor");
+    if (!select) return;
+    try {
+        const res = await fetch("/api/corridors");
+        if (res.ok) {
+            const corridors = await res.json();
+            select.innerHTML = corridors.map(c => `<option value="${escapeHtml(c.corridor_id)}">${escapeHtml(c.corridor_id)} - ${escapeHtml(c.section_name)}</option>`).join("");
+        }
+    } catch (err) {
+        console.error("Error populating corridors:", err);
+        select.innerHTML = '<option value="">Failed to load corridors</option>';
+    }
+}
+
+function initSubmitDefaultDates() {
+    const repInput = document.getElementById("sub-date-reported");
+    const dueInput = document.getElementById("sub-due-date");
+    const today = new Date().toISOString().split("T")[0];
+    const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+    if (repInput && !repInput.value) repInput.value = today;
+    if (dueInput && !dueInput.value) dueInput.value = nextWeek;
+}
+
+async function submitDefectForm(event) {
+    event.preventDefault();
+    const btn = document.getElementById("btn-submit-defect");
+    const alertBox = document.getElementById("submit-alert");
+
+    const payload = {
+        source_system: document.getElementById("sub-source").value,
+        asset_id: document.getElementById("sub-asset-id").value,
+        corridor_id: document.getElementById("sub-corridor").value,
+        defect_type: document.getElementById("sub-defect-type").value,
+        severity: parseInt(document.getElementById("sub-severity").value),
+        department: document.getElementById("sub-department").value,
+        location_marker: document.getElementById("sub-location").value,
+        estimated_block_duration: parseFloat(document.getElementById("sub-duration").value),
+        date_reported: document.getElementById("sub-date-reported").value,
+        due_date: document.getElementById("sub-due-date").value
+    };
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner"></div><span>Submitting...</span>`;
+    }
+
+    try {
+        const res = await fetch("/api/defects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Submission failed");
+
+        if (alertBox) {
+            alertBox.style.display = "block";
+            alertBox.style.backgroundColor = "var(--success-bg)";
+            alertBox.style.color = "var(--success-text)";
+            alertBox.style.border = "1px solid var(--success-border)";
+            alertBox.innerHTML = `<strong>✅ Defect TASK-${data.task_id} Created Successfully!</strong><br>Calculated Priority Score: <strong>${data.priority_score.toFixed(2)}</strong> | Health Score: <strong>${data.health_score.toFixed(1)}</strong>`;
+        }
+
+        document.getElementById("sub-asset-id").value = "";
+        document.getElementById("sub-defect-type").value = "";
+        document.getElementById("sub-location").value = "";
+    } catch (err) {
+        console.error("Error submitting defect:", err);
+        if (alertBox) {
+            alertBox.style.display = "block";
+            alertBox.style.backgroundColor = "var(--danger-bg)";
+            alertBox.style.color = "var(--danger-text)";
+            alertBox.style.border = "1px solid var(--danger-border)";
+            alertBox.innerHTML = `<strong>❌ Error:</strong> ${escapeHtml(err.message)}`;
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<span>📤 Submit Defect Report</span>`;
+        }
+    }
 }
 
 async function runWhatIf() {

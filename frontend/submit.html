@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Defect Data | Indian Railways</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h1>🚂 Automatic Block Planning System</h1>
+                <p>AI-Driven Maintenance Scheduling & Asset Health Intelligence</p>
+            </div>
+            <div class="status-pill">
+                <div class="status-dot"></div>
+                System Active • Horizon 2026-09-07 to 09-13
+            </div>
+        </header>
+
+        <!-- Top Navigation Bar -->
+        <nav id="top-nav"></nav>
+
+        <!-- Submit Defect Form Card -->
+        <div class="section-card section-card-narrow">
+            <div class="section-header">
+                <div class="section-title">➕ Department Defect Submission Form</div>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">
+                Submit new track maintenance defects directly into the central planning database. Priority and asset health scores will be computed automatically.
+            </p>
+
+            <form id="defect-form" onsubmit="submitDefectForm(event)">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="sub-source">Source System *</label>
+                        <select id="sub-source" class="form-select" required>
+                            <option value="TMS">TMS (Track Management System)</option>
+                            <option value="SMMS">SMMS (Signal & Telecom)</option>
+                            <option value="TDMS">TDMS (Track Machine System)</option>
+                            <option value="COA">COA (Control Office Application)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="sub-asset-id">Asset ID *</label>
+                        <input type="text" id="sub-asset-id" class="form-control" placeholder="e.g. RAIL-501 or SIG-302" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="sub-corridor">Railway Corridor *</label>
+                        <select id="sub-corridor" class="form-select" required>
+                            <option value="">Loading corridors...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="sub-department">Department *</label>
+                        <select id="sub-department" class="form-select" required>
+                            <option value="Engineering">Engineering</option>
+                            <option value="S&T">S&T (Signals & Telecom)</option>
+                            <option value="Track Machine">Track Machine</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="sub-defect-type">Defect Type / Description *</label>
+                        <input type="text" id="sub-defect-type" class="form-control" placeholder="e.g. Rail Fracture Risk" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="sub-severity">Severity (1-5) *</label>
+                        <select id="sub-severity" class="form-select" required>
+                            <option value="1">L1 - Minor</option>
+                            <option value="2">L2 - Low</option>
+                            <option value="3" selected>L3 - Moderate</option>
+                            <option value="4">L4 - High</option>
+                            <option value="5">L5 - Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="sub-location">Location / Chainage Marker</label>
+                        <input type="text" id="sub-location" class="form-control" placeholder="e.g. NDLS-CNB @ 42.3km">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="sub-duration">Est. Block Duration (Hours) *</label>
+                        <input type="number" id="sub-duration" class="form-control" min="0.5" max="12.0" step="0.5" value="2.5" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="sub-date-reported">Date Reported *</label>
+                        <input type="date" id="sub-date-reported" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="sub-due-date">Target Due Date *</label>
+                        <input type="date" id="sub-due-date" class="form-control" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="btn-submit-defect" style="width: 100%; margin-top: 12px;">
+                    <span>📤 Submit Defect Report</span>
+                </button>
+            </form>
+
+            <div id="submit-alert" style="display: none; margin-top: 18px; padding: 14px; border-radius: 8px; font-size: 0.9rem;"></div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
